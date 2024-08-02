@@ -56,9 +56,7 @@ func FetchJournalDetail(db *sql.DB, lastChecked time.Time) ([]model.JournalDetai
 	query := `
 			select j.id, j.journal_id, j.property, j.prop_key, j.old_value, j.value from bitnami_redmine.journal_details j`
 
-	formattedTime := lastChecked.Format("2006-01-02 15:04:05")
-
-	rows, err := db.Query(query, formattedTime)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +80,8 @@ func FetchUsers(db *sql.DB, lastChecked time.Time) ([]model.User, error) {
 			select u.id, u.login, u.hashed_password, u.firstname, u.lastname, u.admin, u.status, u.last_login_on, u.language,  
        u.auth_source_id , u.created_on , u.updated_on , u.type, u.mail_notification , u.salt , u.must_change_passwd , u.passwd_changed_on
   from bitnami_redmine.users u
-   where u.login != ''`
+   where u.updated_on > ?
+     and u.login != ''`
 
 	formattedTime := lastChecked.Format("2006-01-02 15:04:05")
 

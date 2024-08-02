@@ -96,7 +96,7 @@ func main() {
 		}
 
 		// Fetch and process journal details
-		journalDetails, err := database.FetchJournalDetail(db, lastChecked)
+		/*journalDetails, err := database.FetchJournalDetail(db, lastChecked)
 		if err != nil {
 			log.Printf("failed to fetch journal details: %v", err)
 			continue
@@ -104,7 +104,7 @@ func main() {
 		err = action.ProcessJournalDetails(s3Client, bucketName, journalDetails)
 		if err != nil {
 			log.Printf("failed to process and upload journal details: %v", err)
-		}
+		}*/
 
 		// Fetch and process users
 		users, err := database.FetchUsers(db, lastChecked)
