@@ -30,7 +30,7 @@ type IssueDetail struct {
 	ProjectId      string    `json:"status"`
 	Subject        string    `json:"subject"`
 	Description    string    `json:"description"`
-	DueData        time.Time `json:"due_date"`
+	DueDate        time.Time `json:"due_date"`
 	CategoryId     int       `json:"category_id"`
 	StatusId       int       `json:"status_id"`
 	AssignedToId   int       `json:"assigned_to_id"`

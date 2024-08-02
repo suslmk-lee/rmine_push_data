@@ -107,17 +107,14 @@ func FetchUsers(db *sql.DB, lastChecked time.Time) ([]model.User, error) {
 	return users, nil
 }
 
-func FetchIssues(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
+func FetchIssues(db *sql.DB, lastChecked time.Time) ([]model.IssueDetail, error) {
 	formattedTime := lastChecked.Format("2006-01-02 15:04:05")
 	query := `
-			select i.id, i.subject, i.description, i.due_date , is2.name, i.created_on , i.updated_on , i.start_date , i.done_ratio,
-			(select e.name from bitnami_redmine.enumerations e where e.type = 'IssuePriority' and i.priority_id = e.id) as priority,
-			(select b.firstname from bitnami_redmine.users b where i.author_id = b.id) as author,
-			i.project_id , i.root_id 
-			  from bitnami_redmine.issues i,
-			  bitnami_redmine.issue_statuses is2 
-			 where i.status_id = is2.id
-			 and i.updated_on > ?
+			select i.id, i.tracker_id, i.project_id, i.subject, i.description, i.due_date , i.status_id, i.assigned_to_id, 
+				i.created_on , i.updated_on , i.start_date , i.done_ratio, i.priority_id, i.author_id, 
+				i.project_id , i.root_id 
+			  from bitnami_redmine.issues i
+			 where i.updated_on > ?
 			order by i.updated_on desc`
 
 	rows, err := db.Query(query, formattedTime)
@@ -126,25 +123,16 @@ func FetchIssues(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
 	}
 	defer rows.Close()
 
-	var issues []model.Issue
+	var issues []model.IssueDetail
 	for rows.Next() {
-		var issue model.Issue
-		var assigneeFirstName, assigneeLastName, commentorFirstName sql.NullString
-		var estimatedHours sql.NullFloat64
+		var issue model.IssueDetail
 		var dueDate sql.NullTime
 		if err := rows.Scan(
-			&issue.ID, &issue.JobID, &issue.Status, &assigneeFirstName, &assigneeLastName, &issue.StartDate, &dueDate,
-			&issue.DoneRatio, &estimatedHours, &issue.Priority, &issue.Author, &issue.Subject,
-			&issue.Description, &commentorFirstName, &issue.Notes, &issue.CreatedOn,
+			&issue.ID, &issue.TrackerId, &issue.ProjectId, &issue.Subject, &issue.Description, &issue.DueDate, &issue.StatusId, &issue.AssignedToId,
+			&issue.CreatedOn, &issue.UpdatedOn, &issue.StartDate, &issue.DoneRatio, &issue.PriorityId, &issue.AuthorId,
+			&issue.ProjectId, &issue.RootId,
 		); err != nil {
 			return nil, err
-		}
-		issue.Assignee = fmt.Sprintf("%s %s", assigneeFirstName.String, assigneeLastName.String)
-		issue.Commentor = commentorFirstName.String
-		if estimatedHours.Valid {
-			issue.EstimatedHours = estimatedHours.Float64
-		} else {
-			issue.EstimatedHours = 0
 		}
 		if dueDate.Valid {
 			issue.DueDate = dueDate.Time
