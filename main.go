@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"log"
 	"time"
@@ -52,7 +53,7 @@ func main() {
 	// Load the last checked time from file
 	lastChecked, err := common.LoadLastCheckedTime()
 	if err != nil {
-		log.Fatalf("failed to load last checked time: %v", err)
+		fmt.Printf("failed to load last checked time: %v", err)
 	}
 	if lastChecked.IsZero() {
 		// If there is no last checked time, start from one week ago
