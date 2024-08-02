@@ -2,17 +2,16 @@ package main
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"log"
 	"time"
 
 	"rmine_push_data/action"
 	"rmine_push_data/common"
 	"rmine_push_data/database"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 const (
@@ -74,17 +73,48 @@ func main() {
 	s3Client := s3.New(sess)
 
 	for {
-		// Fetch new issues from MySQL
+		// Fetch and process issues
 		issues, err := database.FetchNewIssues(db, lastChecked)
 		if err != nil {
 			log.Printf("failed to fetch new issues: %v", err)
 			continue
 		}
-
-		// Process and upload issues
 		err = action.ProcessIssues(s3Client, bucketName, issues)
 		if err != nil {
 			log.Printf("failed to process and upload issues: %v", err)
+		}
+
+		// Fetch and process messages
+		messages, err := database.FetchMessages(db, lastChecked)
+		if err != nil {
+			log.Printf("failed to fetch messages: %v", err)
+			continue
+		}
+		err = action.ProcessMessages(s3Client, bucketName, messages)
+		if err != nil {
+			log.Printf("failed to process and upload messages: %v", err)
+		}
+
+		// Fetch and process journal details
+		journalDetails, err := database.FetchJournalDetail(db, lastChecked)
+		if err != nil {
+			log.Printf("failed to fetch journal details: %v", err)
+			continue
+		}
+		err = action.ProcessJournalDetails(s3Client, bucketName, journalDetails)
+		if err != nil {
+			log.Printf("failed to process and upload journal details: %v", err)
+		}
+
+		// Fetch and process users
+		users, err := database.FetchUsers(db, lastChecked)
+		if err != nil {
+			log.Printf("failed to fetch users: %v", err)
+			continue
+		}
+		err = action.ProcessUsers(s3Client, bucketName, users)
+		if err != nil {
+			log.Printf("failed to process and upload users: %v", err)
 		}
 
 		// Update lastChecked time
