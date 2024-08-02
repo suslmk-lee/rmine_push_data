@@ -18,38 +18,93 @@ func ConnectDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-func FetchBoard(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
+func FetchMessages(db *sql.DB, lastChecked time.Time) ([]model.Message, error) {
 	query := `
-			select m.id, m.board_id, m.parent_id, m.subject, replace(m.content, '"', ''), m.author_id, m.last_reply_id, m.created_on, m.updated_on, m.locked, m.sticky
+			select m.id, m.board_id, m.parent_id, m.subject, replace(m.content, '"', ''), 
+			       m.author_id, m.last_reply_id, m.created_on, m.updated_on, m.locked, m.sticky
   from bitnami_redmine.messages m, bitnami_redmine.users a, bitnami_redmine.email_addresses ea 
  where m.author_id = a.id 
    and a.id = ea.user_id
    and ea.is_default = 1
-   and m.updated_on > '2024-08-01 13:55:33.000'
+   and m.updated_on > ?
    and m.parent_id is null 
 order by m.updated_on desc`
-	fmt.Println(query)
-	var issues []model.Issue
-	return issues, nil
+
+	formattedTime := lastChecked.Format("2006-01-02 15:04:05")
+
+	rows, err := db.Query(query, formattedTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var messages []model.Message
+	for rows.Next() {
+		var message model.Message
+		if err := rows.Scan(
+			&message.ID, &message.BoardID, &message.ParentID, &message.Subject, &message.Content,
+			&message.AuthorID, &message.LastReplyID, &message.CreatedOn, &message.UpdatedOn, &message.Locked, &message.Sticky,
+		); err != nil {
+			return nil, err
+		}
+		messages = append(messages, message)
+	}
+	return messages, nil
 }
 
-func FetchJournalDetail(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
+func FetchJournalDetail(db *sql.DB, lastChecked time.Time) ([]model.JournalDetail, error) {
 	query := `
 			select j.id, j.journal_id, j.property, j.prop_key, j.old_value, j.value from bitnami_redmine.journal_details j`
-	fmt.Println(query)
-	var issues []model.Issue
-	return issues, nil
+
+	formattedTime := lastChecked.Format("2006-01-02 15:04:05")
+
+	rows, err := db.Query(query, formattedTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var journalDetails []model.JournalDetail
+	for rows.Next() {
+		var journalDetail model.JournalDetail
+		if err := rows.Scan(
+			&journalDetail.ID, &journalDetail.JournalID, &journalDetail.Property, &journalDetail.PropKey, &journalDetail.OldValue, &journalDetail.Value,
+		); err != nil {
+			return nil, err
+		}
+		journalDetails = append(journalDetails, journalDetail)
+	}
+	return journalDetails, nil
 }
 
-func FetchUsers(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
+func FetchUsers(db *sql.DB, lastChecked time.Time) ([]model.User, error) {
 	query := `
 			select u.id, u.login, u.hashed_password, u.firstname, u.lastname, u.admin, u.status, u.last_login_on, u.language,  
        u.auth_source_id , u.created_on , u.updated_on , u.type, u.mail_notification , u.salt , u.must_change_passwd , u.passwd_changed_on
   from bitnami_redmine.users u
    where u.login != ''`
-	fmt.Println(query)
-	var issues []model.Issue
-	return issues, nil
+
+	formattedTime := lastChecked.Format("2006-01-02 15:04:05")
+
+	rows, err := db.Query(query, formattedTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []model.User
+	for rows.Next() {
+		var user model.User
+		if err := rows.Scan(
+			&user.ID, &user.Login, &user.HashedPassword, &user.FirstName, &user.LastName, &user.Admin, &user.Status, &user.LastLoginOn,
+			&user.Language, &user.AuthSourceID, &user.CreatedOn, &user.UpdatedOn, &user.Type, &user.MailNotification, &user.Salt,
+			&user.MustChangePasswd, &user.PasswdChangedOn,
+		); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
 }
 
 func FetchIssues(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
