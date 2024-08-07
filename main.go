@@ -52,11 +52,12 @@ func main() {
 	// Load the last checked time from file
 	lastChecked, err := common.LoadLastCheckedTime()
 	if err != nil {
+		lastChecked.IsZero()
 		fmt.Printf("failed to load last checked time: %v", err)
 	}
 	if lastChecked.IsZero() {
 		// If there is no last checked time, start from one week ago
-		lastChecked = time.Now().Add(-7 * 24 * time.Hour)
+		lastChecked = time.Now().Add(-300 * 24 * time.Hour)
 	}
 
 	// Create a new AWS session

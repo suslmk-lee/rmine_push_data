@@ -78,19 +78,35 @@ const timestampFile = "last_checked_timestamp.txt"
 // SaveLastCheckedTime saves the last checked time to a file
 func SaveLastCheckedTime(t time.Time) error {
 	millis := t.UnixMilli() / int64(time.Millisecond)
-	return ioutil.WriteFile(timestampFile, []byte(fmt.Sprintf("%d", millis)), 0644)
+	readableTime := t.Format(time.RFC3339)
+	timeString := fmt.Sprintf("%d|%s", millis, readableTime)
+	//fmt.Println(timeString)
+	return ioutil.WriteFile(timestampFile, []byte(timeString), 0644)
 }
 
 func LoadLastCheckedTime() (time.Time, error) {
+
 	data, err := ioutil.ReadFile(timestampFile)
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	millis, err := strconv.ParseInt(string(data), 10, 64)
+	parts := strings.Split(string(data), "|")
 	if err != nil {
 		return time.Time{}, err
 	}
+
+	millis, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	timestamp, err := time.Parse(time.RFC3339, parts[1])
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	fmt.Println("LoadLastCheckedTime:: ", timestamp)
 
 	return time.Unix(0, millis*int64(time.Millisecond)), nil
 }

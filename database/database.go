@@ -22,13 +22,13 @@ func FetchMessages(db *sql.DB, lastChecked time.Time) ([]model.Message, error) {
 	query := `
 			select m.id, m.board_id, m.parent_id, m.subject, replace(m.content, '"', ''), 
 			       m.author_id, m.last_reply_id, m.created_on, m.updated_on, m.locked, m.sticky
-  from bitnami_redmine.messages m, bitnami_redmine.users a, bitnami_redmine.email_addresses ea 
- where m.author_id = a.id 
-   and a.id = ea.user_id
-   and ea.is_default = 1
-   and m.updated_on > ?
-   and m.parent_id is null 
-order by m.updated_on desc`
+			  from bitnami_redmine.messages m, bitnami_redmine.users a, bitnami_redmine.email_addresses ea 
+			 where m.author_id = a.id 
+			   and a.id = ea.user_id
+			   and ea.is_default = 1
+			   and m.updated_on > ?
+			   and m.parent_id is null 
+			order by m.updated_on desc`
 
 	formattedTime := lastChecked.Format("2006-01-02 15:04:05")
 
