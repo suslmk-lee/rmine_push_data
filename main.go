@@ -57,7 +57,7 @@ func main() {
 	}
 	if lastChecked.IsZero() {
 		// If there is no last checked time, start from one week ago
-		lastChecked = time.Now().Add(-300 * 24 * time.Hour)
+		lastChecked = time.Now().Add(-7 * 24 * time.Hour)
 	}
 
 	// Create a new AWS session
@@ -80,9 +80,12 @@ func main() {
 			log.Printf("failed to fetch new issues: %v", err)
 			continue
 		}
-		err = action.ProcessIssues(s3Client, bucketName, issues)
-		if err != nil {
-			log.Printf("failed to process and upload issues: %v", err)
+
+		if issues != nil {
+			err = action.ProcessIssues(s3Client, bucketName, issues)
+			if err != nil {
+				log.Printf("failed to process and upload issues: %v", err)
+			}
 		}
 
 		// Fetch and process messages
@@ -91,9 +94,12 @@ func main() {
 			log.Printf("failed to fetch messages: %v", err)
 			continue
 		}
-		err = action.ProcessMessages(s3Client, bucketName, messages)
-		if err != nil {
-			log.Printf("failed to process and upload messages: %v", err)
+
+		if messages != nil {
+			err = action.ProcessMessages(s3Client, bucketName, messages)
+			if err != nil {
+				log.Printf("failed to process and upload messages: %v", err)
+			}
 		}
 
 		// Fetch and process journal details
@@ -113,9 +119,12 @@ func main() {
 			log.Printf("failed to fetch users: %v", err)
 			continue
 		}
-		err = action.ProcessUsers(s3Client, bucketName, users)
-		if err != nil {
-			log.Printf("failed to process and upload users: %v", err)
+
+		if users != nil {
+			err = action.ProcessUsers(s3Client, bucketName, users)
+			if err != nil {
+				log.Printf("failed to process and upload users: %v", err)
+			}
 		}
 
 		// Update lastChecked time

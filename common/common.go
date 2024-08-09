@@ -73,11 +73,11 @@ func RandomString(n int) string {
 	return string(b)
 }
 
-const timestampFile = "last_checked_timestamp.txt"
+const timestampFile = "rmine_push_data_last_checked.txt"
 
 // SaveLastCheckedTime saves the last checked time to a file
 func SaveLastCheckedTime(t time.Time) error {
-	millis := t.UnixMilli() / int64(time.Millisecond)
+	millis := t.UnixMilli() /// int64(time.Millisecond)
 	readableTime := t.Format(time.RFC3339)
 	timeString := fmt.Sprintf("%d|%s", millis, readableTime)
 	//fmt.Println(timeString)

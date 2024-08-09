@@ -22,4 +22,5 @@ go.work
 go.work.sum
 .idea/
 config.properties
-last_checked_timestamp.txt
+rmine_push_data_last_checked.txt
+rmine_push_data.exe

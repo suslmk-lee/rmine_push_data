@@ -61,7 +61,9 @@ func ProcessIssues(s3Client *s3.S3, bucketName string, issues []model.Issue) err
 			log.Printf("failed to upload data to S3: %v", err)
 			continue
 		}
+
 	}
+	fmt.Sprintln("Successfully uploaded data to S3(Issues : %i)", len(issues))
 	return nil
 }
 
@@ -87,6 +89,7 @@ func ProcessMessages(s3Client *s3.S3, bucketName string, messages []model.Messag
 			continue
 		}
 	}
+	fmt.Sprintln("Successfully uploaded data to S3(Messages : %i)", len(messages))
 	return nil
 }
 
@@ -112,6 +115,7 @@ func ProcessJournalDetails(s3Client *s3.S3, bucketName string, journalDetails []
 			continue
 		}
 	}
+	fmt.Sprintln("Successfully uploaded data to S3(journalDetails : %i)", len(journalDetails))
 	return nil
 }
 
@@ -137,5 +141,6 @@ func ProcessUsers(s3Client *s3.S3, bucketName string, users []model.User) error 
 			continue
 		}
 	}
+	fmt.Sprintln("Successfully uploaded data to S3(users : %i)", len(users))
 	return nil
 }
