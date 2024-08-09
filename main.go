@@ -36,7 +36,27 @@ func init() {
 	secretKey = common.ConfInfo["nhn.storage.secretKey"]
 }
 
+// logEveryHour logs a message every hour at the start of the hour
+func logEveryHour() {
+	for {
+		now := time.Now()
+		// Calculate the duration until the next hour
+		next := now.Truncate(time.Hour).Add(time.Hour)
+		duration := next.Sub(now)
+
+		// Sleep until the start of the next hour
+		time.Sleep(duration)
+
+		// Log the message
+		log.Printf("Hourly log: Current time is %s", next.Format(time.RFC1123))
+	}
+}
+
 func main() {
+
+	// Start the hourly logging function in a new goroutine
+	go logEveryHour()
+
 	// Ensure the keys are not empty
 	if accessKey == "" || secretKey == "" {
 		log.Fatalf("AccessKey or SecretKey is empty")
