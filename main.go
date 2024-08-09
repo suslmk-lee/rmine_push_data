@@ -57,6 +57,8 @@ func main() {
 	// Start the hourly logging function in a new goroutine
 	go logEveryHour()
 
+	fmt.Println("Start to RMine Push Data Service....")
+
 	// Ensure the keys are not empty
 	if accessKey == "" || secretKey == "" {
 		log.Fatalf("AccessKey or SecretKey is empty")
