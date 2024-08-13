@@ -9,19 +9,27 @@ import (
 type Issue struct {
 	ID             int       `json:"id"`
 	JobID          int       `json:"job_id"`
-	Status         string    `json:"status"`
-	Assignee       string    `json:"assignee"`
-	StartDate      time.Time `json:"start_date"`
-	DueDate        time.Time `json:"due_date"`
-	DoneRatio      int       `json:"done_ratio"`
-	EstimatedHours float64   `json:"estimated_hours"`
-	Priority       string    `json:"priority"`
-	Author         string    `json:"author"`
+	TrackerID      int       `json:"tracker_id"`
+	ProjectID      int       `json:"project_id"`
 	Subject        string    `json:"subject"`
 	Description    string    `json:"description"`
-	Commentor      string    `json:"commentor"`
-	Notes          string    `json:"notes"`
+	DueDate        time.Time `json:"due_date"`
+	StatusID       int       `json:"status_id"`
+	AssignedToID   int       `json:"assigned_to_id"`
 	CreatedOn      time.Time `json:"created_on"`
+	UpdatedOn      time.Time `json:"updated_on"`
+	StartDate      time.Time `json:"start_date"`
+	DoneRatio      int       `json:"done_ratio"`
+	EstimatedHours float64   `json:"estimated_hours"`
+	PriorityID     int       `json:"priority_id"`
+	AuthorID       int       `json:"author_id"`
+	CommentorID    int       `json:"commentor_id"`
+	RootID         int       `json:"root_id"`
+	Notes          string    `json:"notes"`
+	Property       string    `json:"property"`
+	PropKey        string    `json:"prop_key"`
+	OldValue       string    `json:"old_value"`
+	Value          string    `json:"value"`
 }
 
 type IssueDetail struct {

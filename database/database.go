@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"rmine_push_data/model"
 	"time"
 
@@ -147,17 +146,16 @@ func FetchIssues(db *sql.DB, lastChecked time.Time) ([]model.IssueDetail, error)
 func FetchNewIssues(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
 	formattedTime := lastChecked.Format("2006-01-02 15:04:05")
 	query := `
-        SELECT j.id, i.id as 'job_id', is2.name, u.firstname, u.lastname, i.start_date, i.due_date, i.done_ratio, i.estimated_hours,
-        (SELECT e.name FROM bitnami_redmine.enumerations e WHERE e.type = 'IssuePriority' AND i.priority_id = e.id) AS priority,
-        (SELECT b.firstname FROM bitnami_redmine.users b WHERE i.author_id = b.id) AS author,
-        i.subject, i.description,
-        (SELECT b.firstname FROM bitnami_redmine.users b WHERE j.user_id = b.id) AS commentor,
-        j.notes, j.created_on
-        FROM bitnami_redmine.issues i
-        JOIN bitnami_redmine.issue_statuses is2 ON i.status_id = is2.id
-        JOIN bitnami_redmine.users u ON i.assigned_to_id = u.id
-        JOIN bitnami_redmine.journals j ON i.id = j.journalized_id
-        WHERE j.created_on > ?
+        select j.id, i.id as job_id, i.tracker_id, i.project_id, i.subject, i.description, i.due_date , i.status_id, i.assigned_to_id, 
+		i.created_on , i.updated_on , i.start_date , i.done_ratio, i.estimated_hours, i.priority_id, i.author_id, j.user_id as commentor_id,
+		i.root_id, j.notes, jd.property, jd.prop_key, jd.old_value, jd.value 
+		  from bitnami_redmine.issues i
+		  left outer join bitnami_redmine.journals j
+			 on i.id = j.journalized_id 
+		  left outer join bitnami_redmine.journal_details jd
+			 on j.id = jd.journal_id 
+		   where j.id is not null  
+           AND j.created_on > ?
         ORDER BY j.created_on DESC`
 
 	rows, err := db.Query(query, formattedTime)
@@ -169,18 +167,15 @@ func FetchNewIssues(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
 	var issues []model.Issue
 	for rows.Next() {
 		var issue model.Issue
-		var assigneeFirstName, assigneeLastName, commentorFirstName sql.NullString
 		var estimatedHours sql.NullFloat64
 		var dueDate sql.NullTime
 		if err := rows.Scan(
-			&issue.ID, &issue.JobID, &issue.Status, &assigneeFirstName, &assigneeLastName, &issue.StartDate, &dueDate,
-			&issue.DoneRatio, &estimatedHours, &issue.Priority, &issue.Author, &issue.Subject,
-			&issue.Description, &commentorFirstName, &issue.Notes, &issue.CreatedOn,
+			&issue.ID, &issue.JobID, &issue.TrackerID, &issue.ProjectID, &issue.Subject, &issue.Description, &dueDate, &issue.StatusID, &issue.AssignedToID,
+			&issue.CreatedOn, &issue.UpdatedOn, &issue.StartDate, &issue.DoneRatio, &estimatedHours, &issue.PriorityID, &issue.AuthorID, &issue.CommentorID,
+			&issue.RootID, &issue.Notes, &issue.Property, &issue.PropKey, &issue.OldValue, &issue.Value,
 		); err != nil {
 			return nil, err
 		}
-		issue.Assignee = fmt.Sprintf("%s %s", assigneeFirstName.String, assigneeLastName.String)
-		issue.Commentor = commentorFirstName.String
 		if estimatedHours.Valid {
 			issue.EstimatedHours = estimatedHours.Float64
 		} else {
