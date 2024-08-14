@@ -168,11 +168,13 @@ func FetchNewIssues(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
 	for rows.Next() {
 		var issue model.Issue
 		var estimatedHours sql.NullFloat64
+		var assignedToId sql.NullInt32
 		var dueDate sql.NullTime
+		var Property, PropKey, oldValue, value sql.NullString
 		if err := rows.Scan(
-			&issue.ID, &issue.JobID, &issue.TrackerID, &issue.ProjectID, &issue.Subject, &issue.Description, &dueDate, &issue.StatusID, &issue.AssignedToID,
+			&issue.ID, &issue.JobID, &issue.TrackerID, &issue.ProjectID, &issue.Subject, &issue.Description, &dueDate, &issue.StatusID, &assignedToId,
 			&issue.CreatedOn, &issue.UpdatedOn, &issue.StartDate, &issue.DoneRatio, &estimatedHours, &issue.PriorityID, &issue.AuthorID, &issue.CommentorID,
-			&issue.RootID, &issue.Notes, &issue.Property, &issue.PropKey, &issue.OldValue, &issue.Value,
+			&issue.RootID, &issue.Notes, &Property, &PropKey, &oldValue, &value,
 		); err != nil {
 			return nil, err
 		}
@@ -185,6 +187,21 @@ func FetchNewIssues(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
 			issue.DueDate = dueDate.Time
 		} else {
 			issue.DueDate = time.Time{}
+		}
+		if assignedToId.Valid {
+			issue.AssignedToID = assignedToId.Int32
+		}
+		if Property.Valid {
+			issue.Property = Property.String
+		}
+		if PropKey.Valid {
+			issue.PropKey = PropKey.String
+		}
+		if oldValue.Valid {
+			issue.OldValue = oldValue.String
+		}
+		if value.Valid {
+			issue.Value = value.String
 		}
 		issues = append(issues, issue)
 	}

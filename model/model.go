@@ -15,7 +15,7 @@ type Issue struct {
 	Description    string    `json:"description"`
 	DueDate        time.Time `json:"due_date"`
 	StatusID       int       `json:"status_id"`
-	AssignedToID   int       `json:"assigned_to_id"`
+	AssignedToID   int32     `json:"assigned_to_id"`
 	CreatedOn      time.Time `json:"created_on"`
 	UpdatedOn      time.Time `json:"updated_on"`
 	StartDate      time.Time `json:"start_date"`
