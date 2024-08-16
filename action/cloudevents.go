@@ -67,6 +67,32 @@ func ProcessIssues(s3Client *s3.S3, bucketName string, issues []model.Issue) err
 	return nil
 }
 
+func ProcessRawIssues(s3Client *s3.S3, bucketName string, issues []model.IssueDetail) error {
+	for _, issue := range issues {
+		event, err := CreateCloudEvent("redmine/issuesDetail", "com.example.issue", issue)
+		if err != nil {
+			log.Printf("failed to create CloudEvent: %v", err)
+			continue
+		}
+
+		data, err := json.Marshal(event)
+		if err != nil {
+			log.Printf("failed to marshal CloudEvent: %v", err)
+			continue
+		}
+
+		key := fmt.Sprintf("rmine_push_data/raw-issues/%d.json", issue.ID)
+		err = UploadToS3(s3Client, bucketName, data, key)
+		if err != nil {
+			log.Printf("failed to upload data to S3: %v", err)
+			continue
+		}
+
+	}
+	fmt.Sprintln("Successfully uploaded data to S3(RawIssues : %i)", len(issues))
+	return nil
+}
+
 // ProcessMessages processes a list of messages by creating CloudEvents and uploading them to S3
 func ProcessMessages(s3Client *s3.S3, bucketName string, messages []model.Message) error {
 	for _, message := range messages {

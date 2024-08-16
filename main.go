@@ -108,6 +108,7 @@ func main() {
 			if err != nil {
 				log.Printf("failed to process and upload issues: %v", err)
 			}
+			log.Printf("Finished processing %d issues", len(issues))
 		}
 
 		// Fetch and process messages
@@ -122,18 +123,8 @@ func main() {
 			if err != nil {
 				log.Printf("failed to process and upload messages: %v", err)
 			}
+			log.Printf("Finished processing %d messages", len(messages))
 		}
-
-		// Fetch and process journal details
-		/*journalDetails, err := database.FetchJournalDetail(db, lastChecked)
-		if err != nil {
-			log.Printf("failed to fetch journal details: %v", err)
-			continue
-		}
-		err = action.ProcessJournalDetails(s3Client, bucketName, journalDetails)
-		if err != nil {
-			log.Printf("failed to process and upload journal details: %v", err)
-		}*/
 
 		// Fetch and process users
 		users, err := database.FetchUsers(db, lastChecked)
@@ -147,6 +138,21 @@ func main() {
 			if err != nil {
 				log.Printf("failed to process and upload users: %v", err)
 			}
+			log.Printf("Finished processing %d users", len(users))
+		}
+
+		rawIssue, err := database.FetchIssues(db, lastChecked)
+		if err != nil {
+			log.Printf("failed to fetch Raw issues: %v", err)
+			continue
+		}
+
+		if rawIssue != nil {
+			err = action.ProcessRawIssues(s3Client, bucketName, rawIssue)
+			if err != nil {
+				log.Printf("failed to process and upload raw issues: %v", err)
+			}
+			log.Printf("Finished processing %d raw-issues", len(rawIssue))
 		}
 
 		// Update lastChecked time

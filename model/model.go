@@ -34,16 +34,13 @@ type Issue struct {
 
 type IssueDetail struct {
 	ID             int       `json:"id"`
-	TrackerId      int       `json:"job_id"`
-	ProjectId      string    `json:"status"`
+	TrackerId      int       `json:"tracker_id"`
 	Subject        string    `json:"subject"`
 	Description    string    `json:"description"`
 	DueDate        time.Time `json:"due_date"`
-	CategoryId     int       `json:"category_id"`
 	StatusId       int       `json:"status_id"`
 	AssignedToId   int       `json:"assigned_to_id"`
 	PriorityId     int       `json:"priority_id"`
-	FixedVersionId int       `json:"fixed_version_id"`
 	AuthorId       int       `json:"author_id"`
 	LockVersion    int       `json:"lock_version"`
 	CreatedOn      time.Time `json:"created_on"`

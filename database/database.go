@@ -51,29 +51,6 @@ func FetchMessages(db *sql.DB, lastChecked time.Time) ([]model.Message, error) {
 	return messages, nil
 }
 
-func FetchJournalDetail(db *sql.DB, lastChecked time.Time) ([]model.JournalDetail, error) {
-	query := `
-			select j.id, j.journal_id, j.property, j.prop_key, j.old_value, j.value from bitnami_redmine.journal_details j`
-
-	rows, err := db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var journalDetails []model.JournalDetail
-	for rows.Next() {
-		var journalDetail model.JournalDetail
-		if err := rows.Scan(
-			&journalDetail.ID, &journalDetail.JournalID, &journalDetail.Property, &journalDetail.PropKey, &journalDetail.OldValue, &journalDetail.Value,
-		); err != nil {
-			return nil, err
-		}
-		journalDetails = append(journalDetails, journalDetail)
-	}
-	return journalDetails, nil
-}
-
 func FetchUsers(db *sql.DB, lastChecked time.Time) ([]model.User, error) {
 	query := `
 			select u.id, u.login, u.hashed_password, u.firstname, u.lastname, u.admin, u.status, u.last_login_on, u.language,  
@@ -108,12 +85,12 @@ func FetchUsers(db *sql.DB, lastChecked time.Time) ([]model.User, error) {
 func FetchIssues(db *sql.DB, lastChecked time.Time) ([]model.IssueDetail, error) {
 	formattedTime := lastChecked.Format("2006-01-02 15:04:05")
 	query := `
-			select i.id, i.tracker_id, i.project_id, i.subject, i.description, i.due_date , i.status_id, i.assigned_to_id, 
-				i.created_on , i.updated_on , i.start_date , i.done_ratio, i.priority_id, i.author_id, 
-				i.project_id , i.root_id 
-			  from bitnami_redmine.issues i
-			 where i.updated_on > ?
-			order by i.updated_on desc`
+			 select i.id, i.tracker_id, i.subject, i.description, coalesce(i.due_date, DATE('1970-01-02')) as due_date, i.status_id,
+				i.assigned_to_id, i.priority_id, i.author_id, i.lock_version, i.created_on, i.updated_on, i.start_date, i.done_ratio,
+				coalesce(i.estimated_hours, 0) as estimated_hours, i.parent_id, i.root_id, i.is_private, coalesce(i.closed_on, DATE('1970-01-02')) as closed_on 
+			   from bitnami_redmine.issues i
+			  where i.updated_on > ?
+			 order by i.updated_on desc;`
 
 	rows, err := db.Query(query, formattedTime)
 	if err != nil {
@@ -124,19 +101,18 @@ func FetchIssues(db *sql.DB, lastChecked time.Time) ([]model.IssueDetail, error)
 	var issues []model.IssueDetail
 	for rows.Next() {
 		var issue model.IssueDetail
-		var dueDate sql.NullTime
+		var parentId sql.NullInt64
 		if err := rows.Scan(
-			&issue.ID, &issue.TrackerId, &issue.ProjectId, &issue.Subject, &issue.Description, &issue.DueDate, &issue.StatusId, &issue.AssignedToId,
-			&issue.CreatedOn, &issue.UpdatedOn, &issue.StartDate, &issue.DoneRatio, &issue.PriorityId, &issue.AuthorId,
-			&issue.ProjectId, &issue.RootId,
+			&issue.ID, &issue.TrackerId, &issue.Subject, &issue.Description, &issue.DueDate, &issue.StatusId,
+			&issue.AssignedToId, &issue.PriorityId, &issue.AuthorId, &issue.LockVersion, &issue.CreatedOn, &issue.UpdatedOn, &issue.StartDate, &issue.DoneRatio,
+			&issue.EstimatedHours, &parentId, &issue.RootId, &issue.IsPrivate, &issue.ClosedOn,
 		); err != nil {
 			return nil, err
 		}
-		if dueDate.Valid {
-			issue.DueDate = dueDate.Time
-		} else {
-			issue.DueDate = time.Time{}
+		if parentId.Valid {
+			issue.ParentId = 0
 		}
+
 		issues = append(issues, issue)
 	}
 	return issues, nil
@@ -146,7 +122,7 @@ func FetchIssues(db *sql.DB, lastChecked time.Time) ([]model.IssueDetail, error)
 func FetchNewIssues(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
 	formattedTime := lastChecked.Format("2006-01-02 15:04:05")
 	query := `
-        select j.id, i.id as job_id, i.tracker_id, i.project_id, i.subject, i.description, i.due_date , i.status_id, i.assigned_to_id, 
+        select j.id, i.id as job_id, i.tracker_id, i.project_id, i.subject, i.description, coalesce(i.due_date, DATE('1970-01-02')) as due_date, i.status_id, i.assigned_to_id, 
 		i.created_on , i.updated_on , i.start_date , i.done_ratio, i.estimated_hours, i.priority_id, i.author_id, j.user_id as commentor_id,
 		i.root_id, j.notes, jd.property, jd.prop_key, jd.old_value, jd.value 
 		  from bitnami_redmine.issues i
@@ -169,10 +145,9 @@ func FetchNewIssues(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
 		var issue model.Issue
 		var estimatedHours sql.NullFloat64
 		var assignedToId sql.NullInt32
-		var dueDate sql.NullTime
 		var Property, PropKey, oldValue, value sql.NullString
 		if err := rows.Scan(
-			&issue.ID, &issue.JobID, &issue.TrackerID, &issue.ProjectID, &issue.Subject, &issue.Description, &dueDate, &issue.StatusID, &assignedToId,
+			&issue.ID, &issue.JobID, &issue.TrackerID, &issue.ProjectID, &issue.Subject, &issue.Description, &issue.DueDate, &issue.StatusID, &assignedToId,
 			&issue.CreatedOn, &issue.UpdatedOn, &issue.StartDate, &issue.DoneRatio, &estimatedHours, &issue.PriorityID, &issue.AuthorID, &issue.CommentorID,
 			&issue.RootID, &issue.Notes, &Property, &PropKey, &oldValue, &value,
 		); err != nil {
@@ -182,11 +157,6 @@ func FetchNewIssues(db *sql.DB, lastChecked time.Time) ([]model.Issue, error) {
 			issue.EstimatedHours = estimatedHours.Float64
 		} else {
 			issue.EstimatedHours = 0
-		}
-		if dueDate.Valid {
-			issue.DueDate = dueDate.Time
-		} else {
-			issue.DueDate = time.Time{}
 		}
 		if assignedToId.Valid {
 			issue.AssignedToID = assignedToId.Int32
